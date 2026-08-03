@@ -6,12 +6,14 @@ import { Category } from '@/lib/db';
 import ExpenseForm from './expense-form';
 import CategoryCard from './category-card';
 import InstallButton from './install-button';
+import AddCategoryModal from './add-category-modal';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'settings'>('dashboard');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [showAddCategory, setShowAddCategory] = useState(false);
 
   const { categories, expenses, budgetCycle, loadCategories, loadExpenses, loadBudgetCycle, removeExpense, setTotalBudget } = useExpenseStore();
   const [showBudgetInput, setShowBudgetInput] = useState(false);
@@ -126,7 +128,15 @@ export default function Dashboard() {
 
             {/* Categories */}
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Categories</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">Categories</h3>
+                <button
+                  onClick={() => setShowAddCategory(true)}
+                  className="text-xs font-medium px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                >
+                  + Add
+                </button>
+              </div>
               <div className="space-y-2">
                 {categories.map((category) => (
                   <CategoryCard
@@ -256,6 +266,17 @@ export default function Dashboard() {
           </button>
         </div>
       </nav>
+
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <AddCategoryModal
+          onClose={() => setShowAddCategory(false)}
+          onSuccess={() => {
+            setShowAddCategory(false);
+            loadCategories();
+          }}
+        />
+      )}
 
       {/* Budget Input Modal */}
       {showBudgetInput && (
