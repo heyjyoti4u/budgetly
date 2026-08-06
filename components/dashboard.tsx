@@ -15,9 +15,10 @@ export default function Dashboard() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
 
-  const { categories, expenses, budgetCycle, loadCategories, loadExpenses, loadBudgetCycle, removeExpense, setTotalBudget } = useExpenseStore();
+  const { categories, expenses, budgetCycle, loadCategories, loadExpenses, loadBudgetCycle, removeExpense, setTotalBudget, resetBudget } = useExpenseStore();
   const [showBudgetInput, setShowBudgetInput] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -235,6 +236,22 @@ export default function Dashboard() {
                 Budget resets on the {budgetCycle?.salaryDate}th every month
               </p>
             </div>
+
+            {/* Reset Budget */}
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              <label className="block text-sm font-medium text-white mb-2">
+                Reset Budget
+              </label>
+              <p className="text-xs text-slate-400 mb-3">
+                Set total budget and every category&apos;s allocated amount back to ₹0, so you can reallocate from scratch. You can do this as many times as you want.
+              </p>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors text-white text-sm"
+              >
+                Reset Budget to ₹0
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -326,6 +343,48 @@ export default function Dashboard() {
                   className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-medium transition-colors text-white text-sm"
                 >
                   Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Budget Confirm Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-end z-50 animate-in slide-in-from-bottom">
+          <div className="w-full bg-slate-900 rounded-t-3xl p-5 border-t border-slate-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Reset Budget?</h2>
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-slate-800 rounded-lg p-3 text-sm text-slate-300 space-y-1">
+                <p>Total budget aur sabhi categories ka allocated budget ₹0 ho jayega. Aap fir se naye sirre se allocate kar sakte hain.</p>
+                <p className="text-xs text-slate-400">Note: Yeh sirf budget allocation reset karta hai — aapke expense history records safe rahenge.</p>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg font-medium transition-colors text-white text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await resetBudget();
+                    setShowResetConfirm(false);
+                  }}
+                  className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors text-white text-sm"
+                >
+                  Yes, Reset
                 </button>
               </div>
             </div>

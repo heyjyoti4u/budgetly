@@ -209,6 +209,35 @@ export async function setBudgetCycle(cycle: Omit<BudgetCycle, 'startDate' | 'end
   });
 }
 
+export async function resetAllBudgets(): Promise<{ categories: Category[]; budgetCycle: BudgetCycle | null }> {
+  const database = await initDB();
+
+  // Reset allocatedBudget to 0 for every category
+  const categories = await getCategories();
+  const resetCategories: Category[] = categories.map((c) => ({ ...c, allocatedBudget: 0 }));
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(STORE_CATEGORIES, 'readwrite');
+    const store = transaction.objectStore(STORE_CATEGORIES);
+    resetCategories.forEach((c) => store.put(c));
+
+    transaction.onerror = () => reject(transaction.error);
+    transaction.oncomplete = () => resolve();
+  });
+
+  // Reset total budget to 0, keeping the same salary date/cycle
+  const currentCycle = await getBudgetCycle();
+  let budgetCycle: BudgetCycle | null = null;
+  if (currentCycle) {
+    budgetCycle = await setBudgetCycle({
+      salaryDate: currentCycle.salaryDate,
+      totalBudget: 0,
+    });
+  }
+
+  return { categories: resetCategories, budgetCycle };
+}
+
 export async function initDefaultCategories(): Promise<void> {
   const categories = await getCategories();
   if (categories.length > 0) return;

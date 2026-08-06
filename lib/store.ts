@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Category, Expense, BudgetCycle, getCategories, addCategory, updateCategory, deleteCategory, addExpense, getExpensesByDateRange, deleteExpense, setBudgetCycle, getBudgetCycle, initDefaultCategories } from './db';
+import { Category, Expense, BudgetCycle, getCategories, addCategory, updateCategory, deleteCategory, addExpense, getExpensesByDateRange, deleteExpense, setBudgetCycle, getBudgetCycle, initDefaultCategories, resetAllBudgets } from './db';
 
 interface ExpenseStore {
   categories: Category[];
@@ -19,6 +19,7 @@ interface ExpenseStore {
   removeExpense: (expenseId: string) => Promise<void>;
   setSalaryDate: (day: number) => Promise<void>;
   setTotalBudget: (amount: number) => Promise<void>;
+  resetBudget: () => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
@@ -164,6 +165,18 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       }
     } catch (error) {
       set({ error: (error as Error).message });
+    }
+  },
+
+  resetBudget: async () => {
+    try {
+      set({ loading: true, error: null });
+      const { categories, budgetCycle } = await resetAllBudgets();
+      set({ categories, budgetCycle });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
     }
   },
 }));
