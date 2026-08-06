@@ -76,8 +76,8 @@ export default function CategoryCard({ category, spent, onAddExpense }: Category
           category={category}
           spent={spent}
           onClose={() => setIsEditingBudget(false)}
-          onSave={async (newAllocatedBudget) => {
-            await updateCategoryBudget(category.id, newAllocatedBudget);
+          onSave={async (amount) => {
+            await updateCategoryBudget(category.id, amount);
             setIsEditingBudget(false);
           }}
         />

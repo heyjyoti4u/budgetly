@@ -13,12 +13,9 @@ interface EditBudgetModalProps {
 }
 
 export default function EditBudgetModal({ category, spent, onClose, onSave }: EditBudgetModalProps) {
-  // The field shows and edits the REMAINING (available) budget for this
-  // category, not the raw allocated total. e.g. allocated 3000, spent 300
-  // -> field shows 2700. If the user edits it to 3200, the new allocated
-  // total becomes spent + 3200 = 3500, so remaining becomes exactly 3200.
-  const currentRemaining = category.allocatedBudget - spent;
-  const [amount, setAmount] = useState(currentRemaining.toString());
+  // The field directly edits the TOTAL allocated budget for this category.
+  // Whatever the user types becomes the new total — no hidden math.
+  const [amount, setAmount] = useState(category.allocatedBudget.toString());
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,18 +27,16 @@ export default function EditBudgetModal({ category, spent, onClose, onSave }: Ed
       return;
     }
 
-    // Convert the entered "remaining" value back into the total allocated
-    // budget that needs to be stored, so that (allocated - spent) equals
-    // exactly what the user typed.
-    const newAllocatedBudget = numAmount + spent;
-
     setLoading(true);
     try {
-      await onSave(newAllocatedBudget);
+      await onSave(numAmount);
     } finally {
       setLoading(false);
     }
   };
+
+  const parsedAmount = parseFloat(amount);
+  const remainingAfterSave = !isNaN(parsedAmount) ? parsedAmount - spent : null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
@@ -67,7 +62,7 @@ export default function EditBudgetModal({ category, spent, onClose, onSave }: Ed
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-              Remaining Budget (₹)
+              Allocated Budget (₹)
             </label>
             <input
               type="number"
@@ -80,7 +75,8 @@ export default function EditBudgetModal({ category, spent, onClose, onSave }: Ed
             />
             {spent > 0 && (
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                Already spent ₹{spent.toFixed(0)} this cycle. This is how much is left to spend — change it to add more (or reduce) your budget.
+                Already spent ₹{spent.toFixed(0)} this cycle.
+                {remainingAfterSave !== null && ` Remaining after save: ₹${remainingAfterSave.toFixed(0)}.`}
               </p>
             )}
           </div>

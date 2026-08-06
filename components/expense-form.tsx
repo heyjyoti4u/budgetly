@@ -132,7 +132,8 @@ export default function ExpenseForm({
               style={{ backgroundColor: selectedCat.color + '15', borderLeft: `3px solid ${selectedCat.color}` }}
             >
               <p className="text-slate-200">
-                Remaining: ₹{remainingInSelectedCat.toFixed(0)} | After: ₹
+                Budget: ₹{selectedCat.allocatedBudget.toFixed(0)} | Remaining: ₹
+                {remainingInSelectedCat.toFixed(0)} | After: ₹
                 {(remainingInSelectedCat - parseFloat(amount || '0')).toFixed(0)}
               </p>
             </div>
