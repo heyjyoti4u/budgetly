@@ -74,9 +74,10 @@ export default function CategoryCard({ category, spent, onAddExpense }: Category
       {isEditingBudget && (
         <EditBudgetModal
           category={category}
+          spent={spent}
           onClose={() => setIsEditingBudget(false)}
-          onSave={async (amount) => {
-            await updateCategoryBudget(category.id, amount);
+          onSave={async (newAllocatedBudget) => {
+            await updateCategoryBudget(category.id, newAllocatedBudget);
             setIsEditingBudget(false);
           }}
         />

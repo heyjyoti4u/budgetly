@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useExpenseStore } from '@/lib/store';
-import { Category } from '@/lib/db';
+import { Category, Expense } from '@/lib/db';
 import ExpenseForm from './expense-form';
 import CategoryCard from './category-card';
 import InstallButton from './install-button';
@@ -44,6 +44,26 @@ export default function Dashboard() {
   expenses.forEach((exp) => {
     categoryExpenses[exp.categoryId] = (categoryExpenses[exp.categoryId] || 0) + exp.amount;
   });
+
+  // Group expenses by day for the History tab, most recent day first and
+  // most recent transaction first within each day. Expense ids are
+  // Date.now()-prefixed, so comparing ids also sorts by time-of-day.
+  const expensesByDay: { date: string; total: number; items: Expense[] }[] = (() => {
+    const groups = new Map<string, Expense[]>();
+    expenses.forEach((exp) => {
+      const list = groups.get(exp.date) || [];
+      list.push(exp);
+      groups.set(exp.date, list);
+    });
+
+    return Array.from(groups.entries())
+      .sort((a, b) => b[0].localeCompare(a[0])) // newest date first
+      .map(([date, items]) => ({
+        date,
+        items: [...items].sort((a, b) => b.id.localeCompare(a.id)), // newest first within the day
+        total: items.reduce((sum, exp) => sum + exp.amount, 0),
+      }));
+  })();
 
   return (
     <div className="min-h-screen bg-slate-950 dark:bg-slate-950">
@@ -167,46 +187,66 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'history' && (
-          <div className="space-y-3">
+          <div className="space-y-5">
             <h2 className="text-lg font-bold text-white mb-4">History</h2>
             {expenses.length === 0 ? (
               <p className="text-center text-slate-400 py-8 text-sm">No expenses yet</p>
             ) : (
-              <div className="space-y-2">
-                {expenses.map((expense) => {
-                  const category = categories.find((c) => c.id === expense.categoryId);
-                  return (
-                    <div
-                      key={expense.id}
-                      className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg border border-slate-700 group"
-                    >
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                        style={{ backgroundColor: category?.color }}
-                      >
-                        {category?.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white text-sm">{category?.name}</p>
-                        <p className="text-xs text-slate-400">{new Date(expense.date).toLocaleDateString('en-IN')}</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <p className="font-bold text-white text-sm">₹{expense.amount.toFixed(0)}</p>
-                        <button
-                          onClick={() => {
-                            if (confirm('Delete this expense?')) {
-                              removeExpense(expense.id);
-                            }
-                          }}
-                          className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs font-medium"
+              expensesByDay.map((day) => (
+                <div key={day.date} className="space-y-2">
+                  {/* Day header with daily total */}
+                  <div className="flex items-center justify-between px-1">
+                    <p className="text-xs font-semibold text-slate-300">
+                      {new Date(day.date).toLocaleDateString('en-IN', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </p>
+                    <p className="text-xs font-semibold text-slate-400">
+                      Total: ₹{day.total.toFixed(0)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {day.items.map((expense) => {
+                      const category = categories.find((c) => c.id === expense.categoryId);
+                      return (
+                        <div
+                          key={expense.id}
+                          className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg border border-slate-700 group"
                         >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                            style={{ backgroundColor: category?.color }}
+                          >
+                            {category?.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white text-sm">{category?.name}</p>
+                            {expense.note && (
+                              <p className="text-xs text-slate-400 truncate">{expense.note}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <p className="font-bold text-white text-sm">₹{expense.amount.toFixed(0)}</p>
+                            <button
+                              onClick={() => {
+                                if (confirm('Delete this expense?')) {
+                                  removeExpense(expense.id);
+                                }
+                              }}
+                              className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs font-medium"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
@@ -396,6 +436,7 @@ export default function Dashboard() {
       {isFormOpen && (
         <ExpenseForm
           categories={categories}
+          expenses={expenses}
           selectedCategory={editingCategory}
           onClose={() => setIsFormOpen(false)}
           onSuccess={() => {

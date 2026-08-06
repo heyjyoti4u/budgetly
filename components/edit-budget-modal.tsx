@@ -7,26 +7,37 @@ import { Button } from '@/components/ui/button';
 
 interface EditBudgetModalProps {
   category: Category;
+  spent: number;
   onClose: () => void;
   onSave: (amount: number) => Promise<void>;
 }
 
-export default function EditBudgetModal({ category, onClose, onSave }: EditBudgetModalProps) {
-  const [amount, setAmount] = useState(category.allocatedBudget.toString());
+export default function EditBudgetModal({ category, spent, onClose, onSave }: EditBudgetModalProps) {
+  // The field shows and edits the REMAINING (available) budget for this
+  // category, not the raw allocated total. e.g. allocated 3000, spent 300
+  // -> field shows 2700. If the user edits it to 3200, the new allocated
+  // total becomes spent + 3200 = 3500, so remaining becomes exactly 3200.
+  const currentRemaining = category.allocatedBudget - spent;
+  const [amount, setAmount] = useState(currentRemaining.toString());
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const numAmount = parseFloat(amount);
-    if (numAmount < 0) {
+    if (isNaN(numAmount) || numAmount < 0) {
       alert('Amount cannot be negative');
       return;
     }
 
+    // Convert the entered "remaining" value back into the total allocated
+    // budget that needs to be stored, so that (allocated - spent) equals
+    // exactly what the user typed.
+    const newAllocatedBudget = numAmount + spent;
+
     setLoading(true);
     try {
-      await onSave(numAmount);
+      await onSave(newAllocatedBudget);
     } finally {
       setLoading(false);
     }
@@ -56,7 +67,7 @@ export default function EditBudgetModal({ category, onClose, onSave }: EditBudge
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-              Allocated Budget (₹)
+              Remaining Budget (₹)
             </label>
             <input
               type="number"
@@ -67,6 +78,11 @@ export default function EditBudgetModal({ category, onClose, onSave }: EditBudge
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
               autoFocus
             />
+            {spent > 0 && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                Already spent ₹{spent.toFixed(0)} this cycle. This is how much is left to spend — change it to add more (or reduce) your budget.
+              </p>
+            )}
           </div>
 
           {/* Buttons */}

@@ -168,7 +168,7 @@ export async function getBudgetCycle(): Promise<BudgetCycle | null> {
   });
 }
 
-export async function setBudgetCycle(cycle: Omit<BudgetCycle, 'startDate' | 'endDate'> & { startDate?: string; endDate?: string }): Promise<BudgetCycle> {
+export async function setBudgetCycle(cycle: Omit<BudgetCycle, 'id' | 'startDate' | 'endDate' | 'totalBudget'> & { id?: string; totalBudget?: number; startDate?: string; endDate?: string }): Promise<BudgetCycle> {
   const database = await initDB();
   
   const now = new Date();

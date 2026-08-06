@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Category } from '@/lib/db';
+import { Category, Expense } from '@/lib/db';
 import { useExpenseStore } from '@/lib/store';
 
 interface ExpenseFormProps {
   categories: Category[];
+  expenses: Expense[];
   selectedCategory?: Category | null;
   onClose: () => void;
   onSuccess: () => void;
@@ -13,6 +14,7 @@ interface ExpenseFormProps {
 
 export default function ExpenseForm({
   categories,
+  expenses,
   selectedCategory,
   onClose,
   onSuccess,
@@ -24,6 +26,10 @@ export default function ExpenseForm({
 
   const { recordExpense } = useExpenseStore();
   const selectedCat = categories.find((c) => c.id === categoryId);
+  const spentInSelectedCat = expenses
+    .filter((exp) => exp.categoryId === categoryId)
+    .reduce((sum, exp) => sum + exp.amount, 0);
+  const remainingInSelectedCat = (selectedCat?.allocatedBudget || 0) - spentInSelectedCat;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,8 +132,8 @@ export default function ExpenseForm({
               style={{ backgroundColor: selectedCat.color + '15', borderLeft: `3px solid ${selectedCat.color}` }}
             >
               <p className="text-slate-200">
-                Budget: ₹{selectedCat.allocatedBudget.toFixed(0)} | After: ₹
-                {Math.max(0, selectedCat.allocatedBudget - parseFloat(amount || '0')).toFixed(0)}
+                Remaining: ₹{remainingInSelectedCat.toFixed(0)} | After: ₹
+                {(remainingInSelectedCat - parseFloat(amount || '0')).toFixed(0)}
               </p>
             </div>
           )}
